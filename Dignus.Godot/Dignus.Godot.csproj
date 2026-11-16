@@ -1,0 +1,12 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Authors>EomTaeWook</Authors>
+    <Version>1.1.6</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Dignus" Version="1.4.3" />
+  </ItemGroup>
+</Project>
