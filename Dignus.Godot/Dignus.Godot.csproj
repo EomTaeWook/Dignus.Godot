@@ -4,7 +4,7 @@
     <Nullable>disable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <Authors>EomTaeWook</Authors>
-    <Version>1.1.6</Version>
+    <Version>1.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dignus" Version="1.4.3" />
