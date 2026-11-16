@@ -8,25 +8,33 @@ namespace Dignus.Godot
     {
         private class PoolItem
         {
-            public Node Node             {
+            public Node Node
+            {
                 get;
                 set;
             }
-            public Pool Pool             {
+            public Pool Pool
+            {
                 get;
                 set;
             }
         }
+
         private class Pool : ObjectPoolBase<PoolItem>
         {
             private readonly PackedScene _packedScene;
-            public Pool(PackedScene packedScene)             {
+            public Pool(PackedScene packedScene)
+            {
                 _packedScene = packedScene;
             }
             public override PoolItem CreateItem()
             {
                 var node = _packedScene.Instantiate();
-                var poolItem = new PoolItem { Node = node, Pool = this };
+                var poolItem = new PoolItem
+                {
+                    Node = node,
+                    Pool = this
+                };
                 Instance._nodeToPoolItemMap.Add(node, poolItem);
                 return poolItem;
             }
@@ -36,8 +44,9 @@ namespace Dignus.Godot
                 item.Node.QueueFree();
             }
         }
-        private readonly Dictionary<Node, PoolItem> _nodeToPoolItemMap = new Dictionary<Node, PoolItem>();
-        private readonly Dictionary<PackedScene, Pool> _poolContainer = new Dictionary<PackedScene, Pool>();
+
+        private readonly Dictionary<Node, PoolItem> _nodeToPoolItemMap = [];
+        private readonly Dictionary<PackedScene, Pool> _poolContainer = [];
         public Node Pop(PackedScene packedScene)
         {
             if (_poolContainer.TryGetValue(packedScene, out var pool) == false)
@@ -50,7 +59,8 @@ namespace Dignus.Godot
         public T Pop<T>(PackedScene packedScene) where T : Node
         {
             var node = Pop(packedScene);
-            if (node is T typedNode)             {
+            if (node is T typedNode)
+            {
                 return typedNode;
             }
             Push(node);
@@ -58,24 +68,30 @@ namespace Dignus.Godot
         }
         public void Push(Node node)
         {
-            if (_nodeToPoolItemMap.TryGetValue(node, out var poolItem) == false)             {
+            if (_nodeToPoolItemMap.TryGetValue(node, out var poolItem) == false)
+            {
                 throw new InvalidOperationException("This node was not created by DignusGodotObjectPool.");
             }
             poolItem.Pool.Push(poolItem);
         }
         public void DestroyPool(PackedScene packedScene)
         {
-            if (_poolContainer.TryGetValue(packedScene, out var pool) == true)             {
+            if (_poolContainer.TryGetValue(packedScene, out var pool) == true)
+            {
                 pool.Clear();
             }
         }
-        public void Clear()         {
-            foreach (var pool in _poolContainer.Values)             {
+        public void Clear()
+        {
+            foreach (var pool in _poolContainer.Values)
+            {
                 pool.Clear();
             }
         }
-        public void ClearExceptActive()         {
-            foreach (var pool in _poolContainer.Values)             {
+        public void ClearExceptActive()
+        {
+            foreach (var pool in _poolContainer.Values)
+            {
                 pool.ClearExceptActive();
             }
         }

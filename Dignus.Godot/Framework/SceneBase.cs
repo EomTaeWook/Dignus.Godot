@@ -18,23 +18,11 @@ namespace Dignus.Godot.Framework
         }
         protected abstract void OnAwakeScene();
         public abstract void OnDestroyScene();
-        protected virtual void OnHide()         {
-        }
-        protected virtual void OnShow()         {
-        }
-    }
-    public abstract partial class SceneBase<TController> : SceneBase where TController : ISceneController
-    {
-        public Node[] InjectedNodes = Array.Empty<Node>();
-        public TController SceneController         {
-            get;
-            private set;
-        }
-        public override void _Ready()
+        protected virtual void OnHide()
         {
-            SceneController = DignusGodotServiceContainer.GetService<TController>(InjectedNodes);
-            SceneController.BindScene(this);
-            base._Ready();
+        }
+        protected virtual void OnShow()
+        {
         }
     }
 }

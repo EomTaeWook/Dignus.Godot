@@ -9,11 +9,13 @@ namespace Dignus.Godot
         {
             get
             {
-                if (GodotObject.IsInstanceValid(_instance) == true)                 {
+                if (GodotObject.IsInstanceValid(_instance) == true)
+                {
                     return _instance;
                 }
                 var sceneTree = Engine.GetMainLoop() as SceneTree;
-                if (sceneTree == null)                 {
+                if (sceneTree == null)
+                {
                     throw new InvalidOperationException("A running SceneTree is required.");
                 }
                 _instance = sceneTree.Root.GetNodeOrNull<T>(typeof(T).Name);
@@ -25,10 +27,12 @@ namespace Dignus.Godot
                 return _instance;
             }
         }
-        public override void _EnterTree()         {
+        public override void _EnterTree()
+        {
             OnAwake();
         }
-        protected virtual void OnAwake()         {
+        protected virtual void OnAwake()
+        {
         }
     }
 }

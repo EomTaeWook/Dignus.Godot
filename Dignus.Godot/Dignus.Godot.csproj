@@ -4,9 +4,28 @@
     <Nullable>disable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <Authors>EomTaeWook</Authors>
+    <PackageId>Dignus.Godot</PackageId>
+    <Title>Dignus.Godot</Title>
     <Version>1.0.0</Version>
+    <Copyright>© 2026 EomTaeWook. Released under the MIT License.</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>$(MSBuildProjectDirectory)\..\publish\nuget</PackageOutputPath>
+    <PackageIcon>Icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/EomTaeWook/Dignus.Godot</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/EomTaeWook/Dignus.Godot</RepositoryUrl>
+    <Description>Godot utilities for dependency injection, scene lifecycle management, coroutines, node pooling and bindable properties.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="..\publish\Icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.ko.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
     <PackageReference Include="Dignus" Version="1.4.3" />
   </ItemGroup>
+  <Target Name="CopyPublishDll" AfterTargets="Build" Condition="'$(Configuration)' == 'ExportRelease'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildProjectDirectory)\..\publish\dll\$(TargetFramework)" />
+  </Target>
 </Project>

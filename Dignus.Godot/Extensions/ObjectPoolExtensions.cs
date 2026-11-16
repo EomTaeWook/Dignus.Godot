@@ -6,7 +6,8 @@ namespace Dignus.Godot.Extensions
         public static void Recycle(this Node node)
         {
             var parent = node.GetParent();
-            if (parent != null)             {
+            if (parent != null)
+            {
                 parent.RemoveChild(node);
             }
             DignusGodotObjectPool.Instance.Push(node);
@@ -21,12 +22,14 @@ namespace Dignus.Godot.Extensions
         }
         public static T InstantiateWithPool<T>(this Node caller, PackedScene packedScene) where T : Node
         {
-            if (packedScene == null)             {
+            if (packedScene == null)
+            {
                 return null;
             }
             var node = DignusGodotObjectPool.Instance.Pop<T>(packedScene);
             var parent = node.GetParent();
-            if (parent != null)             {
+            if (parent != null)
+            {
                 parent.RemoveChild(node);
             }
             caller.AddChild(node);

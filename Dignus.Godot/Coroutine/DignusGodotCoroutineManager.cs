@@ -1,4 +1,4 @@
-// Copyright (c) 2021 EomTaeWook
+// Copyright (c) 2026 EomTaeWook
 // MIT License — https://opensource.org/licenses/MIT
 // Part of Dignus Library
 
@@ -11,7 +11,7 @@ namespace Dignus.Godot.Coroutine
 {
     public partial class DignusGodotCoroutineManager : SingletonNode<DignusGodotCoroutineManager>
     {
-        private readonly CoroutineHandler _coroutineHandler = new CoroutineHandler();
+        private readonly CoroutineHandler _coroutineHandler = new();
 
         public static void Start(CoroutineHandle coroutineHandle, Action onCompleteCallback = null)
         {

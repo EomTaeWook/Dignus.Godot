@@ -12,15 +12,25 @@ Godot 4.7.2 .NET용 Dignus 통합 라이브러리다. 의존성 주입, 씬 수�
 - 대상 프레임워크: `net8.0`
 - 의존 패키지: `Dignus` 1.4.3
 
-Godot .NET 에디터와 .NET SDK가 필요하다. 이 저장소에는 실행용 `project.godot`이나 샘플 씬이 없다. 사용하는 Godot C# 프로젝트에서 라이브러리 프로젝트를 참조한다. 상대 경로는 소비 프로젝트 위치에 맞춘다.
+Godot .NET 에디터와 .NET SDK가 필요하다. 사용하는 Godot C# 프로젝트에 다음 패키지 참조를 추가한다. Dignus와 GodotSharp 의존성은 NuGet이 자동으로 해결한다.
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../Dignus.Godot/Dignus.Godot/Dignus.Godot.csproj" />
+  <PackageReference Include="Dignus.Godot" Version="1.0.0" />
 </ItemGroup>
 ```
 
-현재 프로젝트에는 NuGet 패키지 생성이나 배포 자동화 설정이 없다. `publish`에는 아이콘만 있으며, 사용 가능한 Godot 패키지의 게시 여부는 확인하지 않았다.
+## NuGet 패키징
+
+패키지 ID는 `Dignus.Godot`, 버전은 `1.0.0`이다.
+
+```powershell
+dotnet pack Dignus.Godot/Dignus.Godot.csproj -c ExportRelease
+```
+
+패키지는 `publish/nuget/Dignus.Godot.1.0.0.nupkg`에 생성한다. ExportRelease 빌드는 라이브러리를 `publish/dll/net8.0/`에도 복사한다. 패키지에 아이콘, 한국어·영어 README와 MIT 라이선스를 포함한다. 의존성 선언은 패키지 참조에서 생성한다. NuGet 업로드는 별도로 수행한다.
+
+솔루션 구성은 `Debug`, `ExportDebug`, `ExportRelease`를 제공한다.
 
 ## 의존성 주입
 
@@ -31,9 +41,7 @@ DignusGodotServiceContainer.RegisterDependencies(typeof(LobbyController).Assembl
 var controller = DignusGodotServiceContainer.GetService<LobbyController>();
 ```
 
-`GetService<T>(params object[] arguments)`에 인자를 주면 `DignusGodotActivator`가 생성자 매개변수의 타입과 일치하는 런타임 인자를 찾고, 나머지는 컨테이너에서 가져온다. `[Inject]` 프로퍼티도 주입한다. 인자가 없으면 일반 컨테이너 조회를 사용한다.
-
-공개 생성자가 여러 개이면 `[InjectConstructor]`로 하나를 지정해야 한다. 같은 매개변수에 대입 가능한 런타임 인자가 여러 개이면 예외가 발생한다. 인터페이스·추상 타입 조회에는 런타임 인자를 전달할 수 없다.
+컨트롤러와 서비스는 Dignus 컨테이너에서 조회한다. 씬 노드는 `BindScene(this)`를 통해 연결한다.
 
 ## 씬과 컨트롤러
 
@@ -44,7 +52,7 @@ var controller = DignusGodotServiceContainer.GetService<LobbyController>();
 | `_Ready()` | 씬 관리자 등록 → `OnAwakeScene()` → `OnShow()` |
 | `_ExitTree()` | `OnHide()` → `OnDestroyScene()` |
 
-`SceneBase<TController>`는 기본 `_Ready()`보다 먼저 컨트롤러를 생성하고 `BindScene(this)`를 호출한다. `InjectedNodes`는 생성자 주입에 전달할 `Node[]`이며, `_Ready()` 전에 코드로 설정한다. Export 필드는 아니다.
+`SceneBase<TController>`는 기본 `_Ready()`보다 먼저 컨테이너에서 컨트롤러를 조회하고 `BindScene(this)`를 호출한다.
 
 ```csharp
 using Dignus.Godot.Framework;

@@ -12,15 +12,25 @@ Dignus integration for Godot 4.7.2 .NET, providing dependency injection, scene l
 - Target framework: `net8.0`
 - Dependency: `Dignus` 1.4.3
 
-The Godot .NET editor and .NET SDK are required. This repository does not contain a runnable `project.godot` or sample scenes. Reference the library from your Godot C# project, adjusting the relative path to your project location.
+The Godot .NET editor and .NET SDK are required. Add the following package reference to your Godot C# project. NuGet resolves the Dignus and GodotSharp dependencies automatically.
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../Dignus.Godot/Dignus.Godot/Dignus.Godot.csproj" />
+  <PackageReference Include="Dignus.Godot" Version="1.0.0" />
 </ItemGroup>
 ```
 
-The project currently has no NuGet packaging or automated distribution configuration. The `publish` directory contains icons only. Publication of a usable Godot package has not been confirmed.
+## NuGet packaging
+
+Package ID: `Dignus.Godot`. Version: `1.0.0`.
+
+```powershell
+dotnet pack Dignus.Godot/Dignus.Godot.csproj -c ExportRelease
+```
+
+The package is written to `publish/nuget/Dignus.Godot.1.0.0.nupkg`. ExportRelease builds also copy the library to `publish/dll/net8.0/`. The package includes the icon, both READMEs, and MIT license. Dependency declarations are generated from package references. Publishing to NuGet is a separate operation.
+
+The solution exposes `Debug`, `ExportDebug`, and `ExportRelease` configurations.
 
 ## Dependency injection
 
@@ -31,9 +41,7 @@ DignusGodotServiceContainer.RegisterDependencies(typeof(LobbyController).Assembl
 var controller = DignusGodotServiceContainer.GetService<LobbyController>();
 ```
 
-When arguments are provided to `GetService<T>(params object[] arguments)`, `DignusGodotActivator` matches runtime arguments to constructor parameter types and resolves remaining parameters through the container. It also injects properties marked with `[Inject]`. Calls without arguments use regular container resolution.
-
-If a type has multiple public constructors, select one with `[InjectConstructor]`. Multiple runtime arguments assignable to the same parameter cause an exception. Runtime arguments cannot be supplied when resolving interface or abstract types.
+Controllers and services are resolved through the Dignus container. Scene nodes are connected through `BindScene(this)`.
 
 ## Scenes and controllers
 
@@ -44,7 +52,7 @@ If a type has multiple public constructors, select one with `[InjectConstructor]
 | `_Ready()` | Register with scene manager → `OnAwakeScene()` → `OnShow()` |
 | `_ExitTree()` | `OnHide()` → `OnDestroyScene()` |
 
-`SceneBase<TController>` creates its controller and calls `BindScene(this)` before the base `_Ready()`. `InjectedNodes` is a `Node[]` passed to constructor injection. Assign it in code before `_Ready()`; it is not an exported field.
+`SceneBase<TController>` resolves its controller from the container and calls `BindScene(this)` before the base `_Ready()`.
 
 ```csharp
 using Dignus.Godot.Framework;

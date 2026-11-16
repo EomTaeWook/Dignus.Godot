@@ -1,4 +1,4 @@
-// Copyright (c) 2021 EomTaeWook
+// Copyright (c) 2026 EomTaeWook
 // MIT License — https://opensource.org/licenses/MIT
 // Part of Dignus Library
 
