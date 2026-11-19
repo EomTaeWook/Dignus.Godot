@@ -160,6 +160,192 @@ yield 값의 해석은 Dignus 코루틴 처리기를 따른다.
 
 `Dignus.Godot.Extensions.ObjectExtensions.IsNull()`은 `GodotObject.IsInstanceValid`의 반대 결과를 반환한다. 큐에 해제를 요청한 상태를 별도로 판별하는 메서드는 아니다.
 
+## 연결된 사용 예제
+
+다음 코드는 소비 Godot 프로젝트의 타입별 개별 파일 예제다. `Bootstrap`을 `LobbyScene`보다 상위에 있는 유지되는 노드에 붙이면 `_EnterTree()`에서 어셈블리를 등록한 뒤 씬의 `_Ready()`가 실행된다. 필요한 어셈블리는 시작 시 한 번씩 등록하고 씬 전환마다 다시 등록하지 않는다. 컨트롤러와 모델은 DI가 생성하고, 씬 Node는 씬 트리가 소유한다.
+
+### 초기화·모델·컨트롤러·종료 정리
+```csharp
+// Bootstrap.cs
+using Dignus.Godot.DependencyInjection;
+using Godot;
+
+public partial class Bootstrap : Node
+{
+    public override void _EnterTree()
+    {
+        DignusGodotServiceContainer.RegisterDependencies(typeof(LobbyController).Assembly);
+    }
+}
+```
+
+```csharp
+// LobbyModel.cs
+using Dignus.DependencyInjection;
+using Dignus.DependencyInjection.Attributes;
+using Dignus.Godot.Framework;
+
+[Injectable(LifeScope.Transient)]
+public class LobbyModel : ISceneModel
+{
+}
+```
+
+```csharp
+// LobbyController.cs
+using Dignus.DependencyInjection;
+using Dignus.DependencyInjection.Attributes;
+using Dignus.Godot.Framework;
+
+[Injectable(LifeScope.Transient)]
+public class LobbyController : SceneControllerBase<LobbyScene, LobbyModel>
+{
+    public override void Dispose()
+    {
+        Scene = null;
+    }
+}
+```
+
+```csharp
+// LobbyScene.cs
+using Dignus.Godot.Framework;
+
+public partial class LobbyScene : SceneBase<LobbyController>
+{
+    protected override void OnAwakeScene()
+    {
+        // SceneController.Scene and SceneController.Model are available here.
+    }
+
+    public override void OnDestroyScene()
+    {
+        if (SceneController != null)
+        {
+            SceneController.Dispose();
+        }
+    }
+}
+```
+씬의 `_Ready()`는 Transient 컨트롤러 조회, 모델 주입, 씬 연결을 거쳐 `OnAwakeScene()`을 호출한다. 컨트롤러 소유 구독과 자원 정리는 `Dispose()`에 작성한다. 예제에서는 씬 참조를 비운다. 씬에서 `_Ready()`나 `_ExitTree()`를 재정의하면 해당 기본 메서드도 호출해 수명 주기 처리를 유지한다.
+
+### 코루틴 본문과 완료 처리
+```csharp
+// CoroutineExample.cs
+using Dignus.Godot.Coroutine;
+using Godot;
+using System.Collections;
+
+public partial class CoroutineExample : Node
+{
+    public override void _Ready()
+    {
+        DignusGodotCoroutineManager.Start(0.5f, RunSequence(), OnCompleted);
+    }
+
+    private IEnumerator RunSequence()
+    {
+        GD.Print("Started");
+        yield return null;
+        GD.Print("Continued");
+    }
+
+    private void OnCompleted()
+    {
+        GD.Print("Completed");
+    }
+}
+```
+지연 시간은 Dignus 처리기에 전달하며, 본문은 이후 코루틴 갱신에서 실행된다. `yield return null`은 처리기에 제어를 돌려준다. 열거가 끝나면 완료 콜백을 호출한다. 예제는 반복 본문에서 Node를 참조하지 않는 유한 시퀀스를 시작한다.
+
+### 바인딩 구독과 해제
+```csharp
+// ScoreView.cs
+using Dignus.Godot.Binding;
+using Godot;
+
+public partial class ScoreView : Node
+{
+    private readonly BindableProperty<int> _score = new BindableProperty<int>(0);
+
+    public override void _EnterTree()
+    {
+        _score.ValueChanged += OnScoreChanged;
+        OnScoreChanged(_score.Value);
+    }
+
+    public void AddScore(int amount)
+    {
+        _score.Value += amount;
+    }
+
+    public override void _ExitTree()
+    {
+        _score.ValueChanged -= OnScoreChanged;
+    }
+
+    private void OnScoreChanged(int score)
+    {
+        GD.Print(score);
+    }
+}
+```
+구독 시 현재 값을 자동 통지하지 않으므로 예제에서는 직접 표시한다. 구독과 해제를 짝지어 트리를 떠난 뷰의 이벤트 핸들러가 남지 않도록 한다.
+
+### 로드 진행률과 완료 콜백
+```csharp
+// SceneNavigation.cs
+using Dignus.Godot;
+using Dignus.Godot.Framework;
+using Godot;
+
+public partial class SceneNavigation : Node
+{
+    public override void _EnterTree()
+    {
+        DignusGodotSceneManager.Instance.OnSceneLoadingProgress += OnLoadingProgress;
+    }
+
+    public void OpenLobby()
+    {
+        DignusGodotSceneManager.Instance.LoadScene("res://Scenes/Lobby.tscn", OnLobbyLoaded);
+    }
+
+    public override void _ExitTree()
+    {
+        DignusGodotSceneManager.Instance.OnSceneLoadingProgress -= OnLoadingProgress;
+    }
+
+    private void OnLoadingProgress(string sceneName, float progress)
+    {
+        GD.Print($"{sceneName}: {progress}");
+    }
+
+    private void OnLobbyLoaded(SceneBase scene)
+    {
+        if (scene is LobbyScene lobbyScene)
+        {
+            GD.Print(lobbyScene.Name);
+        }
+    }
+}
+```
+전환 전체를 관찰하려면 `SceneNavigation`을 교체되는 기본 씬 밖에 둔다. 진행률 구독은 해당 노드가 트리를 떠날 때 해제하며, 완료 콜백은 로드 요청에 별도로 연결된다. 로드 중 등록된 `SceneBase`가 없으면 완료 콜백 인자는 null일 수 있다.
+
+### 특성 기반 씬 로드와 풀 연결
+
+앞에서 설명한 `[ResourcePath("res://Scenes", "Bullet.tscn")]`를 `Bullet`에 지정한다. `Bullet.tscn`의 루트는 해당 Node 타입을 사용한다. 호출부에는 `Dignus.Godot`, `Dignus.Godot.Extensions`를 가져온다.
+```csharp
+// Within a Node-derived caller, using the Bullet type shown above.
+var packedScene = DignusGodotResourceManager.Instance.LoadScene<Bullet>();
+var bullet = this.InstantiateWithPool<Bullet>();
+if (bullet != null)
+{
+    bullet.Recycle();
+}
+```
+`LoadScene<Bullet>()`는 PackedScene만 로드하며 Node를 생성하거나 부착하지 않는다. 인자 없는 풀 확장은 같은 특성으로 PackedScene을 가져온 뒤 풀의 루트 노드를 호출자에 붙인다. 두 호출은 대체 진입점이며, 명시적 로드는 연결 관계를 설명하기 위해 함께 표시했다.
+
 ## 라이선스
 
 MIT License. [LICENSE](LICENSE)를 참조한다.

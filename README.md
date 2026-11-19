@@ -160,6 +160,192 @@ Yielded values are interpreted by the Dignus coroutine handler.
 
 `Dignus.Godot.Extensions.ObjectExtensions.IsNull()` returns the inverse of `GodotObject.IsInstanceValid`. It does not separately detect whether an object is queued for deletion.
 
+## Connected usage examples
+
+The following snippets are separate type files in the consuming Godot project. Attach `Bootstrap` to a persistent ancestor of `LobbyScene`, so its `_EnterTree()` registers the assembly before the scene's `_Ready()`. Register each required assembly once at startup; do not register it again on every scene transition. DI creates the controller and model, while the scene tree owns the scene Node.
+
+### Bootstrap, model, controller, and cleanup
+```csharp
+// Bootstrap.cs
+using Dignus.Godot.DependencyInjection;
+using Godot;
+
+public partial class Bootstrap : Node
+{
+    public override void _EnterTree()
+    {
+        DignusGodotServiceContainer.RegisterDependencies(typeof(LobbyController).Assembly);
+    }
+}
+```
+
+```csharp
+// LobbyModel.cs
+using Dignus.DependencyInjection;
+using Dignus.DependencyInjection.Attributes;
+using Dignus.Godot.Framework;
+
+[Injectable(LifeScope.Transient)]
+public class LobbyModel : ISceneModel
+{
+}
+```
+
+```csharp
+// LobbyController.cs
+using Dignus.DependencyInjection;
+using Dignus.DependencyInjection.Attributes;
+using Dignus.Godot.Framework;
+
+[Injectable(LifeScope.Transient)]
+public class LobbyController : SceneControllerBase<LobbyScene, LobbyModel>
+{
+    public override void Dispose()
+    {
+        Scene = null;
+    }
+}
+```
+
+```csharp
+// LobbyScene.cs
+using Dignus.Godot.Framework;
+
+public partial class LobbyScene : SceneBase<LobbyController>
+{
+    protected override void OnAwakeScene()
+    {
+        // SceneController.Scene and SceneController.Model are available here.
+    }
+
+    public override void OnDestroyScene()
+    {
+        if (SceneController != null)
+        {
+            SceneController.Dispose();
+        }
+    }
+}
+```
+The scene's `_Ready()` resolves the transient controller, injects its model, binds the scene, and then calls `OnAwakeScene()`. Add controller-owned subscription and resource cleanup to `Dispose()`; the example clears the scene reference. If overriding `_Ready()` or `_ExitTree()` in a scene, call the corresponding base implementation to retain this lifecycle.
+
+### Coroutine body and completion
+```csharp
+// CoroutineExample.cs
+using Dignus.Godot.Coroutine;
+using Godot;
+using System.Collections;
+
+public partial class CoroutineExample : Node
+{
+    public override void _Ready()
+    {
+        DignusGodotCoroutineManager.Start(0.5f, RunSequence(), OnCompleted);
+    }
+
+    private IEnumerator RunSequence()
+    {
+        GD.Print("Started");
+        yield return null;
+        GD.Print("Continued");
+    }
+
+    private void OnCompleted()
+    {
+        GD.Print("Completed");
+    }
+}
+```
+The delay is passed to the Dignus handler; the body runs on subsequent coroutine updates. A `yield return null` yields control back to that handler. Completion callbacks run after the enumerator finishes. This example starts a finite sequence that does not retain the Node in its iterator body.
+
+### Binding subscription and removal
+```csharp
+// ScoreView.cs
+using Dignus.Godot.Binding;
+using Godot;
+
+public partial class ScoreView : Node
+{
+    private readonly BindableProperty<int> _score = new BindableProperty<int>(0);
+
+    public override void _EnterTree()
+    {
+        _score.ValueChanged += OnScoreChanged;
+        OnScoreChanged(_score.Value);
+    }
+
+    public void AddScore(int amount)
+    {
+        _score.Value += amount;
+    }
+
+    public override void _ExitTree()
+    {
+        _score.ValueChanged -= OnScoreChanged;
+    }
+
+    private void OnScoreChanged(int score)
+    {
+        GD.Print(score);
+    }
+}
+```
+Subscribing does not immediately emit the current value, so the example displays it explicitly. Matching subscriptions and unsubscriptions prevents an exited view from retaining its event handler.
+
+### Loading progress and completion callback
+```csharp
+// SceneNavigation.cs
+using Dignus.Godot;
+using Dignus.Godot.Framework;
+using Godot;
+
+public partial class SceneNavigation : Node
+{
+    public override void _EnterTree()
+    {
+        DignusGodotSceneManager.Instance.OnSceneLoadingProgress += OnLoadingProgress;
+    }
+
+    public void OpenLobby()
+    {
+        DignusGodotSceneManager.Instance.LoadScene("res://Scenes/Lobby.tscn", OnLobbyLoaded);
+    }
+
+    public override void _ExitTree()
+    {
+        DignusGodotSceneManager.Instance.OnSceneLoadingProgress -= OnLoadingProgress;
+    }
+
+    private void OnLoadingProgress(string sceneName, float progress)
+    {
+        GD.Print($"{sceneName}: {progress}");
+    }
+
+    private void OnLobbyLoaded(SceneBase scene)
+    {
+        if (scene is LobbyScene lobbyScene)
+        {
+            GD.Print(lobbyScene.Name);
+        }
+    }
+}
+```
+Keep `SceneNavigation` outside the main scene being replaced if it must observe the entire transition. Its progress subscription ends when it leaves the tree; the completion callback belongs to the load request and is invoked separately. A callback's scene argument can be null when no `SceneBase` registered during loading.
+
+### Attribute-based scene loading and pooling
+
+Use the earlier `[ResourcePath("res://Scenes", "Bullet.tscn")]` declaration on `Bullet`. The root of `Bullet.tscn` must use that Node type. Import `Dignus.Godot` and `Dignus.Godot.Extensions` in the caller.
+```csharp
+// Within a Node-derived caller, using the Bullet type shown above.
+var packedScene = DignusGodotResourceManager.Instance.LoadScene<Bullet>();
+var bullet = this.InstantiateWithPool<Bullet>();
+if (bullet != null)
+{
+    bullet.Recycle();
+}
+```
+`LoadScene<Bullet>()` only loads the PackedScene; it does not instantiate or attach a Node. The no-argument pool extension uses the same attribute to obtain the PackedScene, then attaches the pooled root to the caller. These are alternative entry points; the explicit load is shown to explain the relationship.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).
