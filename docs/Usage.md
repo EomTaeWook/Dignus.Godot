@@ -1,5 +1,7 @@
 # Dignus.Godot
 
+English | [한국어](Usage.ko.md)
+
 [English overview](../README.md) | [한국어 개요](../README.ko.md)
 
 English | [한국어](../README.ko.md)

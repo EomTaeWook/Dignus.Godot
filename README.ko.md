@@ -31,8 +31,7 @@ container.Build();
 
 ## 문서
 
-- [API와 연결 예제 · 영어](docs/Usage.md)
-- [API와 연결 예제 · 한국어](docs/Usage.ko.md)
+- [API와 연결 예제](docs/Usage.ko.md)
 
 ## 라이선스
 

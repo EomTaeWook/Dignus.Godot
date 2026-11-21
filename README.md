@@ -31,8 +31,7 @@ Use res:// paths with extensions. PackedScene pools require the expected root No
 
 ## Documentation
 
-- [API and connected examples / English](docs/Usage.md)
-- [API and connected examples / Korean](docs/Usage.ko.md)
+- [API and connected examples](docs/Usage.md)
 
 ## License
 
